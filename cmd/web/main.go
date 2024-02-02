@@ -1,17 +1,14 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	"html/template"
 	"log"
 	"net/http"
 
 	"github.com/waddellmp/gobnb/pkg/config"
-	"github.com/waddellmp/gobnb/pkg/handlers"
 	"github.com/waddellmp/gobnb/pkg/render"
 )
-
-const portNumber = ":8080"
 
 func main() {
 
@@ -19,33 +16,34 @@ func main() {
 
 	// initialize app config
 
-	var app config.AppConfig = config.AppConfig{
-		TemplateCache: make(map[string]*template.Template),
-	}
+	var appConfig config.AppConfig
+
+	port := flag.String("p", ":8080", "Server port")
+	flag.Parse()
+
+	appConfig.Port = *port
 
 	//=========================================================================
 
 	// build static cache
 
-	c, err := render.BuildStaticCache()
+	_, err := render.BuildStaticCache()
 	if err != nil {
 		log.Fatalln("unable to create template cache", err)
 	}
-
-	app.TemplateCache = c
 
 	//=========================================================================
 
 	// setup handlers
 
-	http.HandleFunc("/", handlers.Home)
-	http.HandleFunc("/about", handlers.About)
+	http.HandleFunc("/", Home)
+	http.HandleFunc("/about", About)
 
-	fmt.Printf("Starting application on port %s\n", portNumber)
+	fmt.Printf("Starting application on port %s\n", *port)
 
 	//=========================================================================
 
 	// start server
 
-	_ = http.ListenAndServe(portNumber, nil)
+	_ = http.ListenAndServe(*port, nil)
 }
