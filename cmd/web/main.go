@@ -13,9 +13,8 @@ import (
 // test
 func main() {
 
-	//=========================================================================
-
-	// initialize app config
+	//-------------------------------------------------------------------------
+	// Initialize app config
 
 	var appConfig config.AppConfig
 
@@ -24,18 +23,16 @@ func main() {
 
 	appConfig.Port = *port
 
-	//=========================================================================
-
-	// build static cache
+	//-------------------------------------------------------------------------
+	// Build Static Cache
 
 	_, err := render.BuildStaticCache()
 	if err != nil {
 		log.Fatalln("unable to create template cache", err)
 	}
 
-	//=========================================================================
-
-	// setup handlers
+	//-------------------------------------------------------------------------
+	// Register Handlers
 
 	http.HandleFunc("/", Home)
 	http.HandleFunc("/about", About)
@@ -43,8 +40,7 @@ func main() {
 	fmt.Printf("Starting application on port %s\n", *port)
 
 	//=========================================================================
-
-	// start server
+	// Start server
 
 	_ = http.ListenAndServe(*port, nil)
 }
