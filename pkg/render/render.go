@@ -2,25 +2,33 @@ package render
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
 	"path/filepath"
 )
 
-// pkg configuration
 type renderCache struct {
 	cache map[string]*template.Template
+	mode  string
 }
 
 var rc = renderCache{}
 
-// Builds the render cache and returns it
-func BuildStaticCache() (map[string]*template.Template, error) {
-	// create a cache
-	c := make(map[string]*template.Template)
+func Initialize(mode string) {
+	rc.mode = mode
+	if rc.mode == "static" {
+		fmt.Println("Building static cache")
+		BuildCache()
+		return
+	}
+}
 
-	// set the cache
+// builds the render cache and returns it
+func BuildCache() (map[string]*template.Template, error) {
+	// make cache and set cache
+	c := make(map[string]*template.Template)
 	rc.cache = c
 
 	// get slice of filenames (ie: home-page.html) that were found in filesystem
@@ -63,13 +71,17 @@ func BuildStaticCache() (map[string]*template.Template, error) {
 }
 
 func RenderTemplate(w http.ResponseWriter, filename string) {
-
-	// ========================================================================
-	// try to get the templace from cache
+	// Build dynamic cache on every request (development mode)
+	if rc.mode != "static" {
+		fmt.Println("Dynamically building cache")
+		BuildCache()
+	}
 	t, ok := rc.cache[filename]
 	if !ok {
-		log.Fatalln("template is not in the cache for some reason")
+		log.Fatalln("Unable to find template")
 	}
+	// --------------------------------------------------------------------
+	// try to get the template from cache
 
 	// create new buffer
 	buf := new(bytes.Buffer)

@@ -2,5 +2,6 @@ package config
 
 // Configuration
 type AppConfig struct {
-	Port string
+	Port  string
+	Cache string
 }

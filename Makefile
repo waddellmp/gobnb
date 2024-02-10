@@ -1,2 +1,2 @@
 run: 
-	go run ./... -p :8000
+	go run ./cmd/web -p=:8000 -c=static
