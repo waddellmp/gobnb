@@ -10,86 +10,90 @@ import (
 )
 
 type renderCache struct {
-	cache map[string]*template.Template
-	mode  string
+	cache         map[string]*template.Template
+	mode          string
+	pagePattern   string
+	layoutPattern string
 }
 
-var rc = renderCache{}
+var rc renderCache = renderCache{
+	cache: make(map[string]*template.Template),
+}
 
-func Initialize(mode string) {
+func SetMode(mode string) {
 	rc.mode = mode
-	if rc.mode == "static" {
-		fmt.Println("Building static cache")
-		BuildCache()
-		return
-	}
+}
+func SetLayouts(layout string) {
+	rc.layoutPattern = layout
+}
+func SetPages(page string) {
+	rc.pagePattern = page
 }
 
 // builds the render cache and returns it
-func BuildCache() (map[string]*template.Template, error) {
-	// make cache and set cache
-	c := make(map[string]*template.Template)
-	rc.cache = c
-
-	// get slice of filenames (ie: home-page.html) that were found in filesystem
-	pages, err := filepath.Glob("./templates/*-page.html")
+func BuildStaticCache() (map[string]*template.Template, error) {
+	// get all template pages filenames
+	pages, err := filepath.Glob(rc.pagePattern)
 	if err != nil {
+		log.Printf("Error getting pages: %v\n", err)
 		return rc.cache, err
 	}
 
-	// loop through page paths
+	// get all template layout filenames
+	layouts, err := filepath.Glob(rc.layoutPattern)
+	if err != nil {
+		log.Println("Error getting pages: ", err)
+		return rc.cache, err
+	}
+
+	// loop through all pages, parse each with layout files, and cache
 	for _, page := range pages {
+		pageName := filepath.Base(page)
 
-		// get name of the file from matches (ie: templates/home-page.html)
-		name := filepath.Base(page)
+		// check if page is already in cache
+		_, ok := rc.cache[pageName]
 
-		// construct a new template with name and parse template file path
-		ts, err := template.New(name).ParseFiles(page)
-		if err != nil {
-			return rc.cache, err
-		}
-
-		// get layout filenames
-		layoutFiles, err := filepath.Glob("./templates/*-layout.html")
-		if err != nil {
-			return rc.cache, err
-		}
-
-		// parse in the layout file(s) file using ParseGlob()
-		if len(layoutFiles) > 0 {
-			ts, err = ts.ParseGlob("./templates/*-layout.html")
+		// add to cache
+		if !ok {
+			// parse file
+			pt, err := template.ParseFiles(page)
 			if err != nil {
+				log.Println("Error parsing page templates: ", err)
 				return rc.cache, err
 			}
-		}
 
-		// insert template in cache
-		rc.cache[name] = ts
+			// parse page template with layout files
+			_, err = pt.ParseFiles(layouts...)
+			if err != nil {
+				log.Println("Error parsing layout templates: ", err)
+				return rc.cache, err
+			}
+
+			// cache the template
+			rc.cache[pageName] = pt
+		}
 	}
 
 	return rc.cache, nil
 }
 
 func RenderTemplate(w http.ResponseWriter, filename string) {
-	// Build dynamic cache on every request (development mode)
-	if rc.mode != "static" {
-		fmt.Println("Dynamically building cache")
-		BuildCache()
-	}
 	t, ok := rc.cache[filename]
-	if !ok {
-		log.Fatalln("Unable to find template")
-	}
-	// --------------------------------------------------------------------
-	// try to get the template from cache
 
+	if !ok {
+		log.Println("No file found")
+		return
+	}
+
+	fmt.Printf("Template: %v\n", t)
 	// create new buffer
 	buf := new(bytes.Buffer)
 
 	// use empty buffer to execute template and test if error
-	err := t.Execute(buf, nil)
-	if err != nil {
-		log.Println(err)
+	execErr := t.Execute(buf, nil)
+
+	if execErr != nil {
+		log.Println(execErr)
 	}
 
 	// no error present so execute against response writer

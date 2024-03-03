@@ -16,13 +16,14 @@ func main() {
 
 	var appConfig = config.AppConfig{}
 	flag.StringVar(&appConfig.Port, "p", ":8080", "Server port")
-	flag.StringVar(&appConfig.Cache, "m", "static", "Cache mode (static/dynamic)")
 	flag.Parse()
 
 	//-------------------------------------------------------------------------
-	// Initialize Template Rendering
+	// Set pages, layouts, and build static cache for templates on startup
 
-	render.Initialize(appConfig.Cache)
+	render.SetPages("./templates/*-page.html")
+	render.SetLayouts("./templates/*-layout.html")
+	render.BuildStaticCache()
 
 	//-------------------------------------------------------------------------
 	// Register Handlers
