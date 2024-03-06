@@ -12,10 +12,10 @@ import (
 func main() {
 
 	//-------------------------------------------------------------------------
-	// Initialize app config
+	// Parse command line flags into AppConfig
 
-	var appConfig = config.AppConfig{}
-	flag.StringVar(&appConfig.Port, "p", ":8080", "Server port")
+	flag.BoolVar(&config.AppConfig.UseCache, "cache", false, "Use template cache")
+	flag.StringVar(&config.AppConfig.Port, "p", ":8080", "Server port")
 	flag.Parse()
 
 	//-------------------------------------------------------------------------
@@ -23,7 +23,12 @@ func main() {
 
 	render.SetPages("./templates/*-page.html")
 	render.SetLayouts("./templates/*-layout.html")
-	render.BuildStaticCache()
+	render.BuildStaticCache(false)
+
+	//-------------------------------------------------------------------------
+	// Set use cache
+
+	render.SetUseCache(config.AppConfig.UseCache)
 
 	//-------------------------------------------------------------------------
 	// Register Handlers
@@ -34,6 +39,6 @@ func main() {
 	//-------------------------------------------------------------------------
 	// Start server
 
-	fmt.Printf("Starting application on port %s\n", appConfig.Port)
-	_ = http.ListenAndServe(appConfig.Port, nil)
+	fmt.Printf("Starting application on port %s\n", config.AppConfig.Port)
+	_ = http.ListenAndServe(config.AppConfig.Port, nil)
 }
